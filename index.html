@@ -1,61 +1,155 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Odoo Kaching — Payment Sound</title>
     <style>
-      :root{--bg:#F3F4F6;--card:#fff;--accent:#714b67;--muted:#666}
-      body{font-family:Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial; background:var(--bg); margin:0; padding:32px}
-      .wrap{max-width:900px;margin:0 auto}
-      .card{background:var(--card);padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.06)}
-      h1{margin:0 0 8px}
-      h2{margin-top:20px}
-      a.button{display:inline-block;background:var(--accent);color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none}
-      pre{background:#fafafa;padding:12px;border-radius:6px;overflow:auto}
-      .muted{color:var(--muted)}
-      footer{margin-top:18px;font-size:0.9em;color:var(--muted)}
+      :root {
+        --bg: #f3f4f6;
+        --card: #fff;
+        --accent: #714b67;
+        --muted: #666;
+      }
+      body {
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, Arial;
+        background: var(--bg);
+        margin: 0;
+        padding: 32px;
+      }
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        background: var(--card);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      h2 {
+        margin-top: 20px;
+      }
+      a.button {
+        display: inline-block;
+        background: var(--accent);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+      }
+      pre {
+        background: #fafafa;
+        padding: 12px;
+        border-radius: 6px;
+        overflow: auto;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      footer {
+        margin-top: 18px;
+        font-size: 0.9em;
+        color: var(--muted);
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
       <div class="card">
         <h1>Odoo Kaching — Payment Sound Chrome Extension</h1>
-        <p class="muted">Plays a short cashier / "ka-ching" sound when an element with id or class <code>o_payment_successful</code> appears on a page (intended for Odoo payment success flows).</p>
+        <p class="muted">
+          Plays a short cashier / "ka-ching" sound when an element with id or
+          class <code>o_payment_successful</code> appears on a page (intended
+          for Odoo payment success flows).
+        </p>
 
         <h2>Installation (Load unpacked extension in Chrome)</h2>
         <ol>
           <li>Open <code>chrome://extensions/</code> in Chrome.</li>
           <li>Enable "Developer mode" (toggle top-right).</li>
-          <li>Click "Load unpacked" and select this project folder (<code>odoo-kaching</code> — the directory containing <code>manifest.json</code>).</li>
+          <li>
+            Click "Load unpacked" and select this project folder (<code
+              >odoo-kaching</code
+            >
+            — the directory containing <code>manifest.json</code>).
+          </li>
         </ol>
 
         <h2>Testing</h2>
-        <p>Navigate to your Odoo test page that triggers payment success. When the page inserts an element with id <code>o_payment_successful</code> or class <code>o_payment_successful</code> the extension will play the sound.</p>
+        <p>
+          Navigate to your Odoo test page that triggers payment success. When
+          the page inserts an element with id
+          <code>o_payment_successful</code> or class
+          <code>o_payment_successful</code> the extension will play the sound.
+        </p>
         <p>If you want to test from the console on any page, run:</p>
         <pre>window.__odooKaching && window.__odooKaching.play();</pre>
 
         <h2>Notes and customization</h2>
         <ul>
-          <li>The content script currently matches all URLs (<code>&lt;all_urls&gt;</code>). To restrict it to a particular Odoo host or path, edit <code>manifest.json</code> <code>content_scripts.matches</code> to the desired pattern (for example <code>https://your-odoo-host/*</code>).</li>
-          <li>The extension uses packaged audio files when available and falls back to a synthesized Web Audio sound if needed. To use your own audio file, place it in the extension root and update <code>content_script.js</code> accordingly.</li>
+          <li>
+            The content script currently matches all URLs
+            (<code>&lt;all_urls&gt;</code>). To restrict it to a particular Odoo
+            host or path, edit <code>manifest.json</code>
+            <code>content_scripts.matches</code> to the desired pattern (for
+            example <code>https://your-odoo-host/*</code>).
+          </li>
+          <li>
+            The extension uses packaged audio files when available and falls
+            back to a synthesized Web Audio sound if needed. To use your own
+            audio file, place it in the extension root and update
+            <code>content_script.js</code> accordingly.
+          </li>
         </ul>
 
         <h2>Packaged sounds</h2>
-        <p>The extension will try <code>sound1.mp3</code> (or <code>sound2.mp3</code>) in the extension root and play it when a payment success element appears. If that file is missing or playback is blocked it will try a short list of fallback filenames and finally play a synthesized sound.</p>
+        <p>
+          The extension will try <code>sound1.mp3</code> (or
+          <code>sound2.mp3</code>) in the extension root and play it when a
+          payment success element appears. If that file is missing or playback
+          is blocked it will try a short list of fallback filenames and finally
+          play a synthesized sound.
+        </p>
 
         <h2>Credits</h2>
         <ul>
-          <li>Sound Effect by freesound_community from Pixabay — <a href="https://pixabay.com/users/freesound_community-46691455">https://pixabay.com/users/freesound_community-46691455</a></li>
-          <li>Sound Effect by u_byub5wd934 from Pixabay — <a href="https://pixabay.com/users/u_byub5wd934">https://pixabay.com/users/u_byub5wd934</a></li>
+          <li>
+            Sound Effect by freesound_community from Pixabay —
+            <a href="https://pixabay.com/users/freesound_community-46691455"
+              >https://pixabay.com/users/freesound_community-46691455</a
+            >
+          </li>
+          <li>
+            Sound Effect by u_byub5wd934 from Pixabay —
+            <a href="https://pixabay.com/users/u_byub5wd934"
+              >https://pixabay.com/users/u_byub5wd934</a
+            >
+          </li>
         </ul>
 
         <h2>Privacy</h2>
-        <p class="muted">This extension operates locally and does not collect or transmit personal data. See the full privacy policy:</p>
-        <p><a class="button" href="privacy.html" target="_blank">View Privacy Policy</a></p>
+        <p class="muted">
+          This extension operates locally and does not collect or transmit
+          personal data. See the full privacy policy:
+        </p>
+        <p>
+          <a class="button" href="privacy.html" target="_blank"
+            >View Privacy Policy</a
+          >
+        </p>
 
         <footer>
-          <p>Repository / contact: <a href="https://github.com/philwornath/odoo-kaching">https://github.com/philwornath/odoo-kaching</a></p>
+          <p>
+            Repository / contact:
+            <a href="https://github.com/philwornath/odoo-kaching"
+              >https://github.com/philwornath/odoo-kaching</a
+            >
+          </p>
         </footer>
       </div>
     </div>
