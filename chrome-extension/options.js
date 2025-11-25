@@ -95,7 +95,15 @@
           // Notify background that permission was granted so it can register the content script
           try {
             if (chrome.runtime && chrome.runtime.sendMessage) {
-              chrome.runtime.sendMessage({ type: 'hostPermissionGranted', odooUrl: odooUrl, pattern: pattern }, () => {});
+              // Send a notification to the background script. Handle lastError
+              // in the callback to avoid an unchecked runtime.lastError in the
+              // options page console when the background worker is inactive.
+              chrome.runtime.sendMessage({ type: 'hostPermissionGranted', odooUrl: odooUrl, pattern: pattern }, (resp) => {
+                if (chrome.runtime && chrome.runtime.lastError) {
+                  // Non-fatal: background may be inactive or restarting. Log for debugging.
+                  console.warn('Odoo Kaching: sendMessage warning:', chrome.runtime.lastError.message);
+                }
+              });
             }
           } catch (e) { console.warn('Odoo Kaching: notify background failed', e); }
         } else {

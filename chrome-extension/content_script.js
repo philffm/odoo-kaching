@@ -12,6 +12,43 @@
   let ttsLang = "";
   let ttsEnabled = true;
 
+  // TTS safety / debounce (simplified)
+  let lastTts = 0;
+  const MIN_TTS_INTERVAL = 800;
+  let audioUnlocked = false; // kept for future use, but no longer used as a hard gate
+
+  const DEBUG_TTS = false; // set to true for console logging
+
+  function logTts(...args) {
+    if (DEBUG_TTS) console.log("[Odoo Kaching TTS]", ...args);
+  }
+
+  function safeTts(fn) {
+    try {
+      const now = Date.now();
+      if (now - lastTts < MIN_TTS_INTERVAL) {
+        logTts("debounced");
+        return;
+      }
+      lastTts = now;
+      fn();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Unlock marker on first user interaction (optional info, no gating)
+  try {
+    const __ok_unlock = () => {
+      if (audioUnlocked) return;
+      audioUnlocked = true;
+      logTts("audioUnlocked = true (global interaction)");
+      try { window.speechSynthesis?.cancel(); } catch (e) {}
+    };
+    document.addEventListener('pointerdown', __ok_unlock, { once: true, capture: true });
+    document.addEventListener('keydown', __ok_unlock, { once: true, capture: true });
+  } catch (e) {}
+
   // Load settings early
   chrome.storage?.sync.get(
     { selectedSound, ttsLang, ttsEnabled: true },
@@ -19,6 +56,7 @@
       selectedSound = items.selectedSound;
       ttsLang = items.ttsLang;
       ttsEnabled = items.ttsEnabled;
+      logTts("settings loaded", { selectedSound, ttsLang, ttsEnabled });
       try { updateMenuUI(); } catch (e) {}
     }
   );
@@ -30,6 +68,7 @@
       if (changes.selectedSound) selectedSound = changes.selectedSound.newValue;
       if (changes.ttsLang) ttsLang = changes.ttsLang.newValue;
       if (changes.ttsEnabled) ttsEnabled = !!changes.ttsEnabled.newValue;
+      logTts("settings changed", { selectedSound, ttsLang, ttsEnabled });
       try { updateMenuUI(); } catch (e) {}
     });
   } catch (e) { /* ignore */ }
@@ -129,9 +168,10 @@
     ttsInput.type = 'checkbox';
     ttsInput.id = '__ok_tts_input';
     ttsInput.checked = !!ttsEnabled;
-    ttsInput.addEventListener('change', (ev) => {
+    ttsInput.addEventListener('change', () => {
       ttsEnabled = !!ttsInput.checked;
       try { chrome.storage.sync.set({ ttsEnabled }); } catch (e) {}
+      logTts("ttsEnabled changed via UI:", ttsEnabled);
     });
     ttsRow.appendChild(ttsLabel);
     ttsRow.appendChild(ttsInput);
@@ -190,7 +230,7 @@
   function scanInitial() {
     if (document.querySelector("." + SUCCESS_CLASS)) {
       playSound();
-      try { speakPaymentAmount(); } catch (e) {}
+      try { safeTts(() => speakPaymentAmount()); } catch (e) {}
     }
   }
 
@@ -202,19 +242,19 @@
       for (const node of m.addedNodes) {
         if (isSuccessNode(node)) {
           playSound();
-          try { speakPaymentAmount(); } catch (e) {}
+          try { safeTts(() => speakPaymentAmount()); } catch (e) {}
           return;
         }
         // If a paymentlines container (with total) was added, speak the amount
         try {
           if (node.querySelector && node.querySelector('.paymentlines-container .total, section.paymentlines-container .total, .payment-amount, .total')) {
-            try { speakPaymentAmount(); } catch (e) {}
+            try { safeTts(() => speakPaymentAmount()); } catch (e) {}
           }
         } catch (e) {}
       }
       if (m.type === "attributes" && isSuccessNode(m.target)) {
         playSound();
-        try { speakPaymentAmount(); } catch (e) {}
+        try { safeTts(() => speakPaymentAmount()); } catch (e) {}
         return;
       }
     }
@@ -234,28 +274,42 @@
     document.addEventListener("DOMContentLoaded", () => {
       createUI();
       try { updateMenuUI(); } catch (e) {}
-      // attach product click TTS handlers
       try { observeProductClicks(); } catch (e) {}
-      setTimeout(scanInitial, 80);
+      try { observeAmounts(); } catch (e) {}
+      setTimeout(scanInitial, 300);
     });
   } else {
     createUI();
     try { updateMenuUI(); } catch (e) {}
     try { observeProductClicks(); } catch (e) {}
     try { observeAmounts(); } catch (e) {}
-    setTimeout(scanInitial, 80);
+    setTimeout(scanInitial, 300);
   }
 
   /** -------------------------------------------------------
    * TTS: Speak the payment amount
    * ------------------------------------------------------*/
   function speakPaymentAmount() {
-    if (!ttsEnabled) return;
+    if (!ttsEnabled) {
+      logTts("speakPaymentAmount: TTS disabled");
+      return;
+    }
     try {
       const el = document.querySelector('.paymentlines-container .total, section.paymentlines-container .total, .payment-amount, .total');
-      if (!el) return;
+      if (!el) {
+        logTts("speakPaymentAmount: no amount element found");
+        return;
+      }
       const text = (el.textContent || '').replace(/\u00A0/g, ' ').trim();
-      if (!text) return;
+      if (!text) {
+        logTts("speakPaymentAmount: empty text");
+        return;
+      }
+      if (text === '0' || text === '0.00' || text === '0,00') {
+        logTts("speakPaymentAmount: zero amount", text);
+        return;
+      }
+      logTts("speakPaymentAmount: text =", text, "lang =", ttsLang);
       try {
         if (window.__odooKachingTts && typeof window.__odooKachingTts.speakAmountFromText === 'function') {
           window.__odooKachingTts.speakAmountFromText(text, ttsLang || '');
@@ -264,7 +318,10 @@
       } catch (e) { /* ignore */ }
       try {
         const synth = window.speechSynthesis;
-        if (!synth) return;
+        if (!synth) {
+          logTts("speakPaymentAmount: no speechSynthesis");
+          return;
+        }
         const u = new SpeechSynthesisUtterance(text);
         if (ttsLang) u.lang = ttsLang;
         synth.cancel();
@@ -291,21 +348,41 @@
       }
       if (!label) label = (article.textContent || '').trim().split('\n')[0] || '';
       if (!label) return;
+
       article.dataset.okTtsAttached = '1';
+      logTts("attachProductClickTts: attached for", label);
+
       article.addEventListener('click', (ev) => {
         try {
-          if (!ttsEnabled) return;
-          if (ev.target && ev.target.closest && ev.target.closest('button, a, input, .__ok_amount_tts')) return;
-          if (window.__odooKachingTts && typeof window.__odooKachingTts.speak === 'function') {
-            window.__odooKachingTts.speak(label, { lang: ttsLang || '' });
+          if (!ttsEnabled) {
+            logTts("product click: TTS disabled");
             return;
           }
-          const synth = window.speechSynthesis;
-          if (!synth) return;
-          const u = new SpeechSynthesisUtterance(label);
-          if (ttsLang) u.lang = ttsLang;
-          synth.cancel();
-          synth.speak(u);
+          if (ev.target && ev.target.closest && ev.target.closest('button, a, input, .__ok_amount_tts')) return;
+
+          // mark unlocked for debugging, but not gating
+          if (!audioUnlocked) {
+            audioUnlocked = true;
+            logTts("audioUnlocked = true (product click)");
+            try { window.speechSynthesis?.cancel(); } catch (e) {}
+          }
+
+          safeTts(() => {
+            logTts("product click speak:", label, "lang =", ttsLang);
+            if (window.__odooKachingTts && typeof window.__odooKachingTts.speak === 'function') {
+              window.__odooKachingTts.speak(label, { lang: ttsLang || '' });
+              return;
+            }
+            const synth = window.speechSynthesis;
+            if (!synth) {
+              logTts("product click: no speechSynthesis");
+              return;
+            }
+            const u = new SpeechSynthesisUtterance(label);
+            if (ttsLang) u.lang = ttsLang;
+            synth.cancel();
+            synth.speak(u);
+          });
         } catch (e) {}
       });
     } catch (e) { /* ignore */ }
@@ -315,6 +392,7 @@
     try {
       const attachAll = () => {
         const articles = document.querySelectorAll('article[data-product-id]');
+        logTts("observeProductClicks: found", articles.length, "articles");
         for (const a of articles) attachProductClickTts(a);
       };
       attachAll();
@@ -334,12 +412,20 @@
       btn.className = '__ok_amount_tts';
       btn.title = 'Play amount';
       btn.textContent = '🔈';
-      Object.assign(btn.style, { marginLeft: '8px', padding: '4px 8px', fontSize: '14px', verticalAlign: 'middle', cursor: 'pointer', borderRadius: '6px', border: 'none', background: 'rgba(0,0,0,0.05)' });
+      Object.assign(btn.style, {
+        marginLeft: '8px',
+        padding: '4px 8px',
+        fontSize: '14px',
+        verticalAlign: 'middle',
+        cursor: 'pointer',
+        borderRadius: '6px',
+        border: 'none',
+        background: 'rgba(0,0,0,0.05)'
+      });
       btn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        try { speakPaymentAmount(); } catch (e) {}
+        safeTts(() => speakPaymentAmount());
       });
-      // avoid duplicates
       amountEl.dataset.okAmountAttached = '1';
       try {
         if (amountEl.parentNode && amountEl.parentNode.nodeType === 1 && amountEl.parentNode.style && getComputedStyle(amountEl.parentNode).display.includes('flex')) {
@@ -357,6 +443,7 @@
     try {
       const attachAll = () => {
         const els = document.querySelectorAll('.paymentlines-container .total, section.paymentlines-container .total, .payment-amount, .total');
+        logTts("observeAmounts: found", els.length, "amount elements");
         for (const el of els) attachAmountTtsButton(el);
       };
       attachAll();

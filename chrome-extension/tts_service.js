@@ -1,13 +1,27 @@
 // tts_service.js
 // Exposes a simple TTS service on window.__odooKachingTts
 (function () {
-  const state = { ttsLang: '' };
+  const state = { ttsLang: '', voicesReady: false };
+  const DEBUG_TTS = false;
+  function logTts(...args) { if (DEBUG_TTS) console.log("[Odoo Kaching TTS service]", ...args); }
 
   function safeGetVoices() {
     try {
-      return window.speechSynthesis ? window.speechSynthesis.getVoices() || [] : [];
+      const v = window.speechSynthesis ? window.speechSynthesis.getVoices() || [] : [];
+      if (DEBUG_TTS) logTts("voices length =", v.length);
+      return v;
     } catch (e) { return []; }
   }
+
+  // mark when voices are loaded
+  try {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        state.voicesReady = true;
+        logTts("voiceschanged:", safeGetVoices().length);
+      };
+    }
+  } catch (e) {}
 
   function pickVoice(lang) {
     try {
@@ -26,12 +40,16 @@
     try {
       if (!text) return;
       const synth = window.speechSynthesis;
-      if (!synth) return;
+      if (!synth) {
+        logTts("speak: no speechSynthesis");
+        return;
+      }
       const lang = (opts.lang || state.ttsLang || '').replace('_', '-') || '';
       const utter = new SpeechSynthesisUtterance(String(text));
       if (lang) utter.lang = lang;
       const v = pickVoice(lang);
       if (v) utter.voice = v;
+      logTts("speak:", text, "lang =", lang, "voice =", v && v.name);
       try { synth.cancel(); } catch (e) {}
       synth.speak(utter);
     } catch (e) { console.error('Odoo Kaching TTS: speak failed', e); }
