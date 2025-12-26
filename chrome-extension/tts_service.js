@@ -126,33 +126,57 @@
 
         switch (langPrefix) {
           case 'de':
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` und ${parseInt(minorPart,10)} ${minorName || 'Cent'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'Cent'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` und ${parseInt(minorPart,10)} ${minorName || 'Cent'}`;
+            }
             phrase += ` ${polite.de}`;
             break;
           case 'fr':
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` et ${parseInt(minorPart,10)} ${minorName || 'centime'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'centime'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` et ${parseInt(minorPart,10)} ${minorName || 'centime'}`;
+            }
             phrase += ` ${polite.fr}`;
             break;
           case 'es':
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` con ${parseInt(minorPart,10)} ${minorName || 'céntimos'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'céntimos'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` con ${parseInt(minorPart,10)} ${minorName || 'céntimos'}`;
+            }
             phrase += ` ${polite.es}`;
             break;
           case 'it':
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` e ${parseInt(minorPart,10)} ${minorName || 'centesimi'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'centesimi'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` e ${parseInt(minorPart,10)} ${minorName || 'centesimi'}`;
+            }
             phrase += ` ${polite.it}`;
             break;
           case 'nl':
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` en ${parseInt(minorPart,10)} ${minorName || 'cent'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'cent'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` en ${parseInt(minorPart,10)} ${minorName || 'cent'}`;
+            }
             phrase += ` ${polite.nl}`;
             break;
           default:
-            phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
-            if (minorPart) phrase += ` and ${parseInt(minorPart,10)} ${minorName || 'cents'}`;
+            if (major === 0 && minorPart) {
+              phrase = `${parseInt(minorPart,10)} ${minorName || 'cents'}`;
+            } else {
+              phrase = majorName ? `${majorPart} ${majorName}` : `${majorPart}`;
+              if (minorPart) phrase += ` and ${parseInt(minorPart,10)} ${minorName || 'cents'}`;
+            }
             phrase += `, ${polite.en}`;
         }
       } else {
